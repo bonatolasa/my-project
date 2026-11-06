@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 210 72">
+ <g fill="none" stroke="#111" stroke-width="5" stroke-linejoin="round" stroke-linecap="round">
+  <path d="M35 12 51 40 41 58H14l-7-9 10-20h21"/><path d="M20 29 27 17q8-12 16 0l7 12"/><path d="M25 30v17h16V30"/>
+ </g>
+ <text x="62" y="51" font-family="Arial,Helvetica,sans-serif" font-size="41" font-weight="700" letter-spacing="-2" fill="#111">telnyx</text>
+</svg>

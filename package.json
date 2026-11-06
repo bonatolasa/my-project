@@ -1,0 +1,28 @@
+{
+  "name": "virtual-phone-platform",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "apps/frontend",
+    "apps/backend",
+    "packages/shared"
+  ],
+  "scripts": {
+    "dev": "concurrently -n api,web -c blue,green \"npm run dev --workspace @virtual-phone/backend\" \"npm run dev --workspace @virtual-phone/frontend\"",
+    "dev:infra": "docker compose up -d postgres redis",
+    "check:services": "node scripts/check-local-services.mjs",
+    "db:generate": "npm run db:generate --workspace @virtual-phone/backend",
+    "db:migrate": "npm run db:migrate --workspace @virtual-phone/backend",
+    "db:deploy": "npm run db:deploy --workspace @virtual-phone/backend",
+    "db:studio": "npm run db:studio --workspace @virtual-phone/backend",
+    "build": "npm run build --workspace @virtual-phone/shared && npm run build --workspace @virtual-phone/backend && npm run build --workspace @virtual-phone/frontend",
+    "lint": "npm run lint --workspace @virtual-phone/backend && npm run lint --workspace @virtual-phone/frontend",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "prettier": "^3.6.2",
+    "typescript": "^5.9.2"
+  }
+}

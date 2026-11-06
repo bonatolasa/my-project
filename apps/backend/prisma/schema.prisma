@@ -1,0 +1,490 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserStatus {
+  PENDING_VERIFICATION
+  ACTIVE
+  SUSPENDED
+  DELETED
+}
+
+enum NumberStatus {
+  AVAILABLE
+  RESERVED
+  ACTIVE
+  RELEASED
+  UNAVAILABLE
+}
+
+enum OrderStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+  REFUNDED
+}
+
+enum RentalStatus {
+  PENDING
+  ACTIVE
+  EXPIRED
+  RELEASED
+  FAILED
+}
+
+enum MessageDirection {
+  INBOUND
+  OUTBOUND
+}
+
+enum OutboundMessageStatus {
+  QUEUED
+  SENT
+  DELIVERED
+  FAILED
+}
+
+enum PaymentStatus {
+  PENDING
+  VERIFIED
+  FAILED
+  REFUNDED
+  PARTIALLY_REFUNDED
+}
+
+enum WalletTransactionKind {
+  DEPOSIT
+  PURCHASE
+  RENEWAL
+  REFUND
+  ADJUSTMENT
+}
+
+enum WebhookStatus {
+  RECEIVED
+  PROCESSING
+  PROCESSED
+  FAILED
+}
+
+enum ProviderStatus {
+  DISABLED
+  SANDBOX
+  ACTIVE
+  DEGRADED
+}
+
+model TelecomProvider {
+  id              String         @id @default(uuid()) @db.Uuid
+  key             String         @unique @db.VarChar(40)
+  displayName     String         @map("display_name") @db.VarChar(100)
+  status          ProviderStatus @default(DISABLED)
+  priority        Int            @default(100)
+  supportedRegions Json          @default("[]") @map("supported_regions")
+  capabilities    Json           @default("[]")
+  lastHealthCheckAt DateTime?    @map("last_health_check_at") @db.Timestamptz(6)
+  lastErrorCode   String?        @map("last_error_code") @db.VarChar(80)
+  createdAt       DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([status, priority])
+  @@map("telecom_providers")
+}
+
+model User {
+  id               String          @id @default(uuid()) @db.Uuid
+  email            String          @unique @db.VarChar(320)
+  passwordHash     String          @map("password_hash")
+  status           UserStatus      @default(PENDING_VERIFICATION)
+  emailVerifiedAt  DateTime?       @map("email_verified_at") @db.Timestamptz(6)
+  createdAt        DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime        @updatedAt @map("updated_at") @db.Timestamptz(6)
+  userRoles        UserRole[]
+  wallets          Wallet[]
+  orders           NumberOrder[]
+  rentals          NumberRental[]
+  messages         SMSMessage[]
+  outboundMessages OutboundSMS[]
+  otpVerifications OtpVerification[]
+  calls            CallRecord[]
+  payments         Payment[]
+  subscriptions    Subscription[]
+  notifications    Notification[]
+  supportTickets   SupportTicket[]
+  auditLogs        AuditLog[]
+  walletTransactions WalletTransaction[]
+
+  @@map("users")
+}
+
+model Role {
+  id        String     @id @default(uuid()) @db.Uuid
+  name      String     @unique @db.VarChar(64)
+  createdAt DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  users     UserRole[]
+
+  @@map("roles")
+}
+
+model UserRole {
+  userId    String   @map("user_id") @db.Uuid
+  roleId    String   @map("role_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      Role     @relation(fields: [roleId], references: [id], onDelete: Restrict)
+
+  @@id([userId, roleId])
+  @@index([roleId])
+  @@map("user_roles")
+}
+
+model Country {
+  id          String        @id @default(uuid()) @db.Uuid
+  isoCode     String        @unique @map("iso_code") @db.Char(2)
+  name        String        @db.VarChar(120)
+  callingCode String        @map("calling_code") @db.VarChar(8)
+  enabled     Boolean       @default(false)
+  createdAt   DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
+  numbers     PhoneNumber[]
+
+  @@map("countries")
+}
+
+model PhoneNumber {
+  id                String         @id @default(uuid()) @db.Uuid
+  countryId         String         @map("country_id") @db.Uuid
+  provider          String         @db.VarChar(40)
+  providerNumberId  String         @map("provider_number_id") @db.VarChar(180)
+  e164              String         @db.VarChar(20)
+  supportsSms       Boolean        @default(false) @map("supports_sms")
+  supportsVoice     Boolean        @default(false) @map("supports_voice")
+  status            NumberStatus   @default(AVAILABLE)
+  inventoryCheckedAt DateTime?     @map("inventory_checked_at") @db.Timestamptz(6)
+  createdAt         DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
+  country           Country        @relation(fields: [countryId], references: [id], onDelete: Restrict)
+  orders            NumberOrder[]
+  rentals           NumberRental[]
+  messages          SMSMessage[]
+  calls             CallRecord[]
+
+  @@unique([provider, providerNumberId])
+  @@index([countryId, status, supportsSms, supportsVoice])
+  @@index([e164])
+  @@map("phone_numbers")
+}
+
+model NumberOrder {
+  id             String      @id @default(uuid()) @db.Uuid
+  userId         String      @map("user_id") @db.Uuid
+  phoneNumberId  String?     @map("phone_number_id") @db.Uuid
+  idempotencyKey String      @map("idempotency_key") @db.VarChar(160)
+  amountMinor    BigInt      @map("amount_minor")
+  currency       String      @db.Char(3)
+  status         OrderStatus @default(PENDING)
+  providerRef    String?     @map("provider_ref") @db.VarChar(180)
+  createdAt      DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime    @updatedAt @map("updated_at") @db.Timestamptz(6)
+  user           User        @relation(fields: [userId], references: [id], onDelete: Restrict)
+  phoneNumber    PhoneNumber? @relation(fields: [phoneNumberId], references: [id], onDelete: Restrict)
+  rental         NumberRental?
+
+  @@unique([userId, idempotencyKey])
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([status, createdAt])
+  @@map("number_orders")
+}
+
+model NumberRental {
+  id            String       @id @default(uuid()) @db.Uuid
+  userId        String       @map("user_id") @db.Uuid
+  phoneNumberId String       @map("phone_number_id") @db.Uuid
+  orderId       String       @unique @map("order_id") @db.Uuid
+  status        RentalStatus @default(PENDING)
+  startsAt      DateTime?    @map("starts_at") @db.Timestamptz(6)
+  expiresAt     DateTime?    @map("expires_at") @db.Timestamptz(6)
+  releasedAt    DateTime?    @map("released_at") @db.Timestamptz(6)
+  createdAt     DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
+  user          User         @relation(fields: [userId], references: [id], onDelete: Restrict)
+  phoneNumber   PhoneNumber  @relation(fields: [phoneNumberId], references: [id], onDelete: Restrict)
+  order         NumberOrder  @relation(fields: [orderId], references: [id], onDelete: Restrict)
+
+  @@index([userId, status, expiresAt])
+  @@index([phoneNumberId, status, startsAt, expiresAt])
+  @@map("number_rentals")
+}
+
+model SMSMessage {
+  id                String           @id @default(uuid()) @db.Uuid
+  userId            String?          @map("user_id") @db.Uuid
+  phoneNumberId     String           @map("phone_number_id") @db.Uuid
+  provider          String           @db.VarChar(40)
+  providerMessageId String           @map("provider_message_id") @db.VarChar(180)
+  direction         MessageDirection @default(INBOUND)
+  sender            String           @db.VarChar(40)
+  content           String
+  receivedAt        DateTime         @map("received_at") @db.Timestamptz(6)
+  readAt            DateTime?        @map("read_at") @db.Timestamptz(6)
+  createdAt         DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  user              User?            @relation(fields: [userId], references: [id], onDelete: SetNull)
+  phoneNumber       PhoneNumber      @relation(fields: [phoneNumberId], references: [id], onDelete: Restrict)
+
+  @@unique([provider, providerMessageId])
+  @@index([userId, receivedAt(sort: Desc)])
+  @@index([phoneNumberId, receivedAt(sort: Desc)])
+  @@map("sms_messages")
+}
+
+model OutboundSMS {
+  id                String                @id @default(uuid()) @db.Uuid
+  userId            String                @map("user_id") @db.Uuid
+  provider          String                @db.VarChar(40)
+  providerMessageId String?               @map("provider_message_id") @db.VarChar(180)
+  recipient         String                @db.VarChar(40)
+  content           String
+  status            OutboundMessageStatus @default(QUEUED)
+  simulated         Boolean               @default(false)
+  error             String?
+  attempts          Int                   @default(0)
+  createdAt         DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime              @updatedAt @map("updated_at") @db.Timestamptz(6)
+  user              User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([status, createdAt])
+  @@map("outbound_sms")
+}
+
+model OtpVerification {
+  id          String    @id @default(uuid()) @db.Uuid
+  userId      String    @map("user_id") @db.Uuid
+  phone       String    @db.VarChar(40)
+  purpose     String    @db.VarChar(40)
+  codeHash    String    @map("code_hash") @db.VarChar(128)
+  expiresAt   DateTime  @map("expires_at") @db.Timestamptz(6)
+  attempts    Int       @default(0)
+  consumedAt  DateTime? @map("consumed_at") @db.Timestamptz(6)
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, phone, purpose, createdAt(sort: Desc)])
+  @@map("otp_verifications")
+}
+
+model CallRecord {
+  id              String   @id @default(uuid()) @db.Uuid
+  userId          String   @map("user_id") @db.Uuid
+  phoneNumberId   String   @map("phone_number_id") @db.Uuid
+  provider        String   @db.VarChar(40)
+  providerCallId  String   @map("provider_call_id") @db.VarChar(180)
+  direction       String   @db.VarChar(16)
+  status          String   @db.VarChar(32)
+  startedAt       DateTime? @map("started_at") @db.Timestamptz(6)
+  endedAt         DateTime? @map("ended_at") @db.Timestamptz(6)
+  durationSeconds Int?     @map("duration_seconds")
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  user            User     @relation(fields: [userId], references: [id], onDelete: Restrict)
+  phoneNumber     PhoneNumber @relation(fields: [phoneNumberId], references: [id], onDelete: Restrict)
+
+  @@unique([provider, providerCallId])
+  @@index([userId, startedAt(sort: Desc)])
+  @@map("call_records")
+}
+
+model Wallet {
+  id        String               @id @default(uuid()) @db.Uuid
+  userId    String               @map("user_id") @db.Uuid
+  currency  String               @db.Char(3)
+  balanceMinor BigInt            @default(0) @map("balance_minor")
+  createdAt DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime             @updatedAt @map("updated_at") @db.Timestamptz(6)
+  user      User                 @relation(fields: [userId], references: [id], onDelete: Restrict)
+  transactions WalletTransaction[]
+
+  @@unique([userId, currency])
+  @@index([userId])
+  @@map("wallets")
+}
+
+model WalletTransaction {
+  id             String               @id @default(uuid()) @db.Uuid
+  walletId       String               @map("wallet_id") @db.Uuid
+  userId         String               @map("user_id") @db.Uuid
+  paymentId      String?              @map("payment_id") @db.Uuid
+  kind           WalletTransactionKind
+  amountMinor    BigInt               @map("amount_minor")
+  currency       String               @db.Char(3)
+  idempotencyKey String               @unique @map("idempotency_key") @db.VarChar(180)
+  description    String?              @db.VarChar(300)
+  createdAt      DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  wallet         Wallet               @relation(fields: [walletId], references: [id], onDelete: Restrict)
+  user           User                 @relation(fields: [userId], references: [id], onDelete: Restrict)
+  payment        Payment?             @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+
+  @@index([walletId, createdAt(sort: Desc)])
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("wallet_transactions")
+}
+
+model Payment {
+  id              String        @id @default(uuid()) @db.Uuid
+  userId          String        @map("user_id") @db.Uuid
+  provider        String        @db.VarChar(40)
+  providerPaymentId String?     @map("provider_payment_id") @db.VarChar(180)
+  amountMinor     BigInt        @map("amount_minor")
+  currency        String        @db.Char(3)
+  status          PaymentStatus @default(PENDING)
+  verifiedAt      DateTime?     @map("verified_at") @db.Timestamptz(6)
+  createdAt       DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
+  user            User          @relation(fields: [userId], references: [id], onDelete: Restrict)
+  walletTransactions WalletTransaction[]
+
+  @@unique([provider, providerPaymentId])
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([status, createdAt])
+  @@map("payments")
+}
+
+model Subscription {
+  id                String   @id @default(uuid()) @db.Uuid
+  userId            String   @map("user_id") @db.Uuid
+  provider          String?  @db.VarChar(40)
+  providerReference String?  @map("provider_reference") @db.VarChar(180)
+  status            String   @db.VarChar(32)
+  periodStartsAt    DateTime? @map("period_starts_at") @db.Timestamptz(6)
+  periodEndsAt      DateTime? @map("period_ends_at") @db.Timestamptz(6)
+  cancelledAt       DateTime? @map("cancelled_at") @db.Timestamptz(6)
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  user              User     @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([userId, status])
+  @@map("subscriptions")
+}
+
+model Notification {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  type      String   @db.VarChar(80)
+  payload   Json
+  dedupeKey String?  @unique @map("dedupe_key") @db.VarChar(180)
+  readAt    DateTime? @map("read_at") @db.Timestamptz(6)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("notifications")
+}
+
+model SupportTicket {
+  id        String           @id @default(uuid()) @db.Uuid
+  userId    String           @map("user_id") @db.Uuid
+  subject   String           @db.VarChar(200)
+  status    String           @db.VarChar(32)
+  priority  String           @db.VarChar(24)
+  createdAt DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
+  user      User             @relation(fields: [userId], references: [id], onDelete: Restrict)
+  messages  SupportMessage[]
+
+  @@index([userId, updatedAt(sort: Desc)])
+  @@map("support_tickets")
+}
+
+model SupportMessage {
+  id        String        @id @default(uuid()) @db.Uuid
+  ticketId  String        @map("ticket_id") @db.Uuid
+  senderId  String        @map("sender_id") @db.Uuid
+  body      String
+  createdAt DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  ticket    SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId, createdAt])
+  @@map("support_messages")
+}
+
+model AuditLog {
+  id            String   @id @default(uuid()) @db.Uuid
+  actorUserId   String?  @map("actor_user_id") @db.Uuid
+  action        String   @db.VarChar(120)
+  targetType    String?  @map("target_type") @db.VarChar(80)
+  targetId      String?  @map("target_id") @db.VarChar(180)
+  requestId     String?  @map("request_id") @db.VarChar(120)
+  metadata      Json?
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  actor         User?    @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([actorUserId, createdAt(sort: Desc)])
+  @@index([targetType, targetId, createdAt(sort: Desc)])
+  @@map("audit_logs")
+}
+
+model WebhookEvent {
+  id          String        @id @default(uuid()) @db.Uuid
+  provider    String        @db.VarChar(40)
+  eventId     String        @map("event_id") @db.VarChar(180)
+  eventType   String        @map("event_type") @db.VarChar(120)
+  status      WebhookStatus @default(RECEIVED)
+  payload     Json
+  attempts    Int           @default(0)
+  lastError   String?       @map("last_error")
+  receivedAt  DateTime      @default(now()) @map("received_at") @db.Timestamptz(6)
+  processedAt DateTime?     @map("processed_at") @db.Timestamptz(6)
+
+  @@unique([provider, eventId])
+  @@index([status, receivedAt])
+  @@map("webhook_events")
+}
+
+model DeveloperApiKey {
+  id          String    @id @default(uuid()) @db.Uuid
+  userId      String    @map("user_id") @db.Uuid
+  name        String    @db.VarChar(100)
+  keyPrefix   String    @map("key_prefix") @db.VarChar(16)
+  keyHash     String    @unique @map("key_hash") @db.VarChar(128)
+  lastUsedAt  DateTime? @map("last_used_at") @db.Timestamptz(6)
+  expiresAt   DateTime? @map("expires_at") @db.Timestamptz(6)
+  revokedAt   DateTime? @map("revoked_at") @db.Timestamptz(6)
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([userId, revokedAt])
+  @@map("developer_api_keys")
+}
+
+model CustomerWebhook {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  url       String    @db.VarChar(2048)
+  secretHash String   @map("secret_hash") @db.VarChar(128)
+  eventTypes Json     @default("[]") @map("event_types")
+  enabled   Boolean   @default(true)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([userId, enabled])
+  @@map("customer_webhooks")
+}
+
+model Referral {
+  id          String   @id @default(uuid()) @db.Uuid
+  referrerId  String   @map("referrer_id") @db.Uuid
+  referredId  String   @unique @map("referred_id") @db.Uuid
+  code        String   @unique @db.VarChar(32)
+  status      String   @db.VarChar(24)
+  rewardMinor BigInt?  @map("reward_minor")
+  currency    String?  @db.Char(3)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([referrerId, createdAt(sort: Desc)])
+  @@map("referrals")
+}

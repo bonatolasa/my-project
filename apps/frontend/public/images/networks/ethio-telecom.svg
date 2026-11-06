@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 82">
+ <path fill="#119d58" d="M35 8C68-3 100 1 116 18c9 10 8 22-2 31-14 12-40 14-62 8C33 51 15 56 7 70 0 48 6 20 35 8Z"/>
+ <path fill="#8cc63f" d="M25 18C48 6 83 4 103 17c12 8 13 19 3 27-12 10-33 11-53 7-24-5-40 4-48 17C1 49 8 29 25 18Z"/>
+ <path fill="#168fc5" d="M13 65c8-15 24-22 43-17 18 5 36 6 49-3-3 13-21 20-39 19-17-1-31-6-42 4-5 4-8 7-11 12-2-5-2-10 0-15Z"/>
+ <text x="128" y="47" font-family="Arial,Helvetica,sans-serif" font-size="31" font-weight="700" letter-spacing="-.8" fill="#111">ethio telecom</text><text x="300" y="29" font-family="Arial,sans-serif" font-size="8" fill="#111">TM</text>
+</svg>
