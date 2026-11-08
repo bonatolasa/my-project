@@ -133,9 +133,18 @@ export default function HomePage() {
       </section>
 
       <section className="why-section section-pad">
-        <div className="mx-auto grid max-w-7xl gap-12 px-5 sm:px-8 lg:grid-cols-2 lg:items-center lg:px-10">
-          <div className="why-art"><div className="why-glow" /><div className="why-core"><RadioTower size={39} strokeWidth={1.5} /></div><div className="why-ring why-ring-one" /><div className="why-ring why-ring-two" /><span className="why-node why-node-one"><Globe2 size={16} /></span><span className="why-node why-node-two"><MessageSquareText size={16} /></span><span className="why-node why-node-three"><ShieldCheck size={16} /></span><span className="why-node why-node-four"><Smartphone size={16} /></span><span className="why-art-caption">ALWAYS IN SYNC <i /></span></div>
-          <div><span className="section-kicker">WHY CHOOSE US</span><h2 className="section-title mt-4">Telecom tools,<br /><span>without the friction.</span></h2><p className="section-description">We’re creating a simpler way to work with virtual connectivity—one that keeps the important details visible and your workflow clear.</p><div className="why-points"><div><span><Check size={14} /></span><p><b>Clarity at every step</b><small>Know what’s available and what each number supports.</small></p></div><div><span><Check size={14} /></span><p><b>One place to manage</b><small>Bring numbers and message activity into one workspace.</small></p></div><div><span><Check size={14} /></span><p><b>Designed with care</b><small>A considered experience from discovery to day-to-day use.</small></p></div></div></div>
+        <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
+          <div className="why-heading mx-auto max-w-3xl text-center">
+            <span className="why-badge"><RadioTower size={13} /> ALWAYS IN SYNC</span>
+            <h2 className="section-title">Why choose us</h2>
+            <p className="section-description mx-auto">Your numbers. Your messages. One simple platform.</p>
+            <p className="why-intro">Virtual connectivity shouldn’t be complicated. We make it easy to discover virtual phone numbers, receive SMS messages, and manage everything from one reliable workspace.</p>
+          </div>
+          <div className="why-benefits">
+            <article className="why-benefit"><div className="why-benefit-visual"><span className="why-benefit-icon"><Globe2 size={25} /></span><span className="why-orbit-dot" /><span className="why-mini-label">GLOBAL REACH</span></div><div className="why-benefit-copy"><span className="why-benefit-number">01 / CONNECT</span><h3>🌍 Global Connectivity</h3><p>Explore virtual phone numbers from different countries and find the right option for your needs.</p></div></article>
+            <article className="why-benefit"><div className="why-benefit-visual"><span className="why-management-stack"><Smartphone size={22} /><Check size={15} /></span><span className="why-mini-label">SIMPLE BY DESIGN</span></div><div className="why-benefit-copy"><span className="why-benefit-number">02 / MANAGE</span><h3>⚡ Simple Number Management</h3><p>Browse, access, and manage your virtual numbers without unnecessary steps or complicated tools.</p></div></article>
+            <article className="why-benefit"><div className="why-benefit-visual"><span className="why-message-bubble"><MessageSquareText size={24} /><i /></span><span className="why-mini-label">ONE CLEAR INBOX</span></div><div className="why-benefit-copy"><span className="why-benefit-number">03 / RECEIVE</span><h3>💬 Messages in One Place</h3><p>Keep track of incoming SMS messages and stay organized with a clear, centralized dashboard.</p></div></article>
+          </div>
         </div>
       </section>
 
