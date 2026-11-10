@@ -9,6 +9,13 @@ const environmentSchema = z.object({
   JWT_ACCESS_TTL: z.string().default('10m'),
   JWT_REFRESH_TTL_DAYS: z.coerce.number().int().min(1).max(365).default(30),
   SMS_MODE: z.enum(['test', 'live']).default('test'),
+  API_URL: z.string().url().default('http://localhost:4000'),
+  TELECOM_WEBHOOK_BASE_URL: z.string().url().optional(),
+  TWILIO_ACCOUNT_SID: z.string().optional(),
+  TWILIO_AUTH_TOKEN: z.string().optional(),
+  TWILIO_MESSAGING_SERVICE_SID: z.string().optional(),
+  TWILIO_VOICE_URL: z.string().url().optional(),
+  TWILIO_DEFAULT_COUNTRY: z.string().length(2).default('US'),
   OTP_TTL_SECONDS: z.coerce.number().int().min(60).max(900).default(300),
   OTP_PEPPER: z.string().optional(),
   GOOGLE_REDIRECT_URI: z.string().url().optional(),
@@ -25,6 +32,9 @@ export function validateEnvironment(input: Record<string, unknown>) {
     if (result.data.JWT_ACCESS_SECRET.includes('replace_with')) {
       throw new Error('JWT_ACCESS_SECRET must be changed before production');
     }
+  }
+  if (result.data.SMS_MODE === 'live' && (!result.data.TWILIO_ACCOUNT_SID || !result.data.TWILIO_AUTH_TOKEN)) {
+    throw new Error('TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN are required when SMS_MODE=live');
   }
   return { ...input, ...result.data };
 }

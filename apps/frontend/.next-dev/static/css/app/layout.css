@@ -40,8 +40,6 @@
     --color-green-700: oklch(52.7% 0.154 150.069);
     --color-green-800: oklch(44.8% 0.119 151.328);
     --color-green-900: oklch(39.3% 0.095 152.535);
-    --color-emerald-50: oklch(97.9% 0.021 166.113);
-    --color-emerald-700: oklch(50.8% 0.118 165.612);
     --color-cyan-300: oklch(86.5% 0.127 207.078);
     --color-blue-50: oklch(97% 0.014 254.604);
     --color-blue-100: oklch(93.2% 0.032 255.585);
@@ -104,7 +102,6 @@
     --font-weight-bold: 700;
     --tracking-tight: -0.025em;
     --tracking-wide: 0.025em;
-    --tracking-wider: 0.05em;
     --radius-lg: 0.5rem;
     --radius-xl: 0.75rem;
     --radius-2xl: 1rem;
@@ -519,6 +516,9 @@
   .min-h-screen {
     min-height: 100vh;
   }
+  .w-44 {
+    width: calc(var(--spacing) * 44);
+  }
   .w-\[260px\] {
     width: 260px;
   }
@@ -564,8 +564,8 @@
   .min-w-0 {
     min-width: 0px;
   }
-  .min-w-\[180px\] {
-    min-width: 180px;
+  .min-w-48 {
+    min-width: calc(var(--spacing) * 48);
   }
   .flex-1 {
     flex: 1;
@@ -598,12 +598,6 @@
   }
   .grid-cols-2 {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .grid-cols-4 {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-  .grid-cols-\[1\.4fr_1fr_1fr_auto\] {
-    grid-template-columns: 1.4fr 1fr 1fr auto;
   }
   .flex-col {
     flex-direction: column;
@@ -670,6 +664,9 @@
   }
   :where(.divide-slate-100 > :not(:last-child)) {
     border-color: var(--color-slate-100);
+  }
+  .self-center {
+    align-self: center;
   }
   .truncate {
     overflow: hidden;
@@ -771,14 +768,8 @@
   .bg-blue-600 {
     background-color: var(--color-blue-600);
   }
-  .bg-emerald-50 {
-    background-color: var(--color-emerald-50);
-  }
   .bg-red-50 {
     background-color: var(--color-red-50);
-  }
-  .bg-slate-50 {
-    background-color: var(--color-slate-50);
   }
   .bg-slate-100 {
     background-color: var(--color-slate-100);
@@ -1039,10 +1030,6 @@
     --tw-tracking: var(--tracking-wide);
     letter-spacing: var(--tracking-wide);
   }
-  .tracking-wider {
-    --tw-tracking: var(--tracking-wider);
-    letter-spacing: var(--tracking-wider);
-  }
   .whitespace-pre-wrap {
     white-space: pre-wrap;
   }
@@ -1099,9 +1086,6 @@
   }
   .text-cyan-300 {
     color: var(--color-cyan-300);
-  }
-  .text-emerald-700 {
-    color: var(--color-emerald-700);
   }
   .text-red-700 {
     color: var(--color-red-700);
@@ -1251,6 +1235,9 @@
   }
   .focus\:border-blue-600:focus {
     border-color: var(--color-blue-600);
+  }
+  .disabled\:opacity-50:disabled {
+    opacity: 50%;
   }
   .disabled\:opacity-60:disabled {
     opacity: 60%;
